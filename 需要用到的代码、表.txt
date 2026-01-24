@@ -1,0 +1,3 @@
+venv\Scripts\activate
+python run.py
+http://localhost:5000

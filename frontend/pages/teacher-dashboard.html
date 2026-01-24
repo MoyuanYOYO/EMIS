@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师仪表板 - 教务管理系统</title>
+    <!-- 本地 Bootstrap 5 CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 自定义CSS -->
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold text-primary" href="#">
+                🎓 教务管理系统 - 教师端
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="me-3 text-muted" id="teacherName">加载中...</span>
+                <a href="/api/auth/logout" class="btn btn-outline-secondary btn-sm">
+                    注销
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主体内容 -->
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-lg-2 col-md-3 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav flex-column" id="sidebarMenu">
+                            <li class="nav-item mb-2">
+                                <button class="btn btn-outline-primary w-100 text-start" data-page="dashboard">
+                                    仪表板
+                                </button>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <button class="btn btn-outline-primary w-100 text-start" data-page="courses">
+                                    我的课程
+                                </button>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <button class="btn btn-outline-primary w-100 text-start" data-page="students">
+                                    学生管理
+                                </button>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <button class="btn btn-outline-primary w-100 text-start" data-page="grades">
+                                    成绩管理
+                                </button>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <button class="btn btn-outline-primary w-100 text-start" data-page="profile">
+                                    个人中心
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主要内容区 -->
+            <div class="col-lg-10 col-md-9">
+                <div class="card">
+                    <div class="card-body" id="mainContent">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-3">正在加载教师仪表板...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本地 Bootstrap 5 JS -->
+    <script src="/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 教师仪表板逻辑 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 检查登录状态
+            checkLoginStatus();
+
+            // 初始化页面
+            initializePage();
+        });
+
+        // 检查登录状态
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/api/auth/current-user');
+                if (!response.ok) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                const user = await response.json();
+                if (user.role !== 'teacher') {
+                    alert('权限不足，请使用教师账号登录');
+                    window.location.href = '/';
+                    return;
+                }
+
+                // 显示教师姓名
+                document.getElementById('teacherName').textContent = user.name || user.username;
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // 初始化页面
+        function initializePage() {
+            // 设置侧边栏按钮点击事件
+            const sidebarButtons = document.querySelectorAll('#sidebarMenu button');
+            sidebarButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    // 移除所有按钮的active状态
+                    sidebarButtons.forEach(btn => {
+                        btn.classList.remove('active', 'btn-primary');
+                        btn.classList.add('btn-outline-primary');
+                    });
+
+                    // 设置当前按钮为active状态
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('active', 'btn-primary');
+
+                    // 加载对应页面
+                    const page = this.dataset.page;
+                    loadPage(page);
+                });
+            });
+
+            // 默认加载仪表板
+            loadPage('dashboard');
+        }
+
+        // 加载页面
+        async function loadPage(page) {
+            const mainContent = document.getElementById('mainContent');
+
+            // 显示加载状态
+            mainContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-3">正在加载...</p>
+                </div>
+            `;
+
+            try {
+                switch (page) {
+                    case 'dashboard':
+                        await loadDashboard();
+                        break;
+                    case 'courses':
+                        await loadCourses();
+                        break;
+                    case 'students':
+                        await loadStudents();
+                        break;
+                    case 'grades':
+                        await loadGrades();
+                        break;
+                    case 'profile':
+                        await loadProfile();
+                        break;
+                    default:
+                        await loadDashboard();
+                }
+            } catch (error) {
+                console.error('加载页面失败:', error);
+                showError('加载页面失败，请刷新重试');
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5 class="alert-heading">错误</h5>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="location.reload()">刷新页面</button>
+                </div>
+            `;
+        }
+
+        // 加载仪表板
+        async function loadDashboard() {
+            try {
+                // 获取教师信息
+                const teacherResponse = await fetch('/api/auth/current-user');
+                if (!teacherResponse.ok) throw new Error('获取教师信息失败');
+                const teacher = await teacherResponse.json();
+
+                const mainContent = document.getElementById('mainContent');
+                mainContent.innerHTML = `
+                    <h4 class="mb-4">教师仪表板</h4>
+                    
+                    <div class="alert alert-info">
+                        <strong>欢迎回来，${teacher.name || teacher.username}老师！</strong>
+                        <p class="mb-0 mt-2">请使用侧边栏菜单管理您的教学工作。</p>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">快速操作</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" data-page="courses">
+                                            查看我的课程
+                                        </button>
+                                        <button class="btn btn-outline-success" data-page="grades">
+                                            管理学生成绩
+                                        </button>
+                                        <button class="btn btn-outline-info" data-page="students">
+                                            查看学生列表
+                                        </button>
+                                        <button class="btn btn-outline-warning" data-page="profile">
+                                            个人信息设置
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">系统提示</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            请及时录入学生成绩，保证数据准确性
+                                        </li>
+                                        <li class="list-group-item">
+                                            定期查看课程容量，合理安排教学资源
+                                        </li>
+                                        <li class="list-group-item">
+                                            注意保护学生隐私信息，遵守数据安全规定
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">待办事项</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center text-muted">
+                                <p>暂无待办事项</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 为快速操作按钮添加点击事件
+                mainContent.querySelectorAll('[data-page]').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const page = this.dataset.page;
+                        loadPage(page);
+                    });
+                });
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 加载我的课程
+        async function loadCourses() {
+            try {
+                // 获取教师课程
+                const response = await fetch('/api/teacher/courses');
+                const courses = response.ok ? await response.json() : [];
+
+                const mainContent = document.getElementById('mainContent');
+
+                let coursesHTML = '';
+                if (courses.length > 0) {
+                    coursesHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>课程号</th>
+                                        <th>课程名称</th>
+                                        <th>学分</th>
+                                        <th>学期</th>
+                                        <th>学生人数</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${courses.map(course => `
+                                        <tr>
+                                            <td>${course.course_id}</td>
+                                            <td>${course.course_name}</td>
+                                            <td>${course.credits}</td>
+                                            <td>${course.semester}</td>
+                                            <td>${course.current_enrollment}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="viewCourseStudents('${course.course_id}')">
+                                                    查看学生
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    coursesHTML = `
+                        <div class="alert alert-warning">
+                            当前没有课程数据，请联系管理员分配课程。
+                        </div>
+                    `;
+                }
+
+                mainContent.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4>我的课程</h4>
+                        <button class="btn btn-primary" id="refreshCourses">
+                            刷新列表
+                        </button>
+                    </div>
+                    
+                    ${coursesHTML}
+                `;
+
+                // 添加刷新按钮事件
+                document.getElementById('refreshCourses').addEventListener('click', function () {
+                    loadCourses();
+                });
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 查看课程学生
+        function viewCourseStudents(courseId) {
+            loadStudents();
+            // 在实际应用中，这里可以传递courseId参数来筛选特定课程的学生
+        }
+
+        // 加载学生管理
+        async function loadStudents() {
+            try {
+                // 获取教师所教课程的学生
+                const response = await fetch('/api/teacher/students');
+                const students = response.ok ? await response.json() : [];
+
+                const mainContent = document.getElementById('mainContent');
+
+                let studentsHTML = '';
+                if (students.length > 0) {
+                    studentsHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>学号</th>
+                                        <th>姓名</th>
+                                        <th>院系</th>
+                                        <th>课程</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${students.map(student => `
+                                        <tr>
+                                            <td>${student.student_id}</td>
+                                            <td>${student.name}</td>
+                                            <td>${student.department}</td>
+                                            <td>${student.course_name}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-info" onclick="viewStudentGrades('${student.student_id}', '${student.course_id}')">
+                                                    查看成绩
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    studentsHTML = `
+                        <div class="alert alert-warning">
+                            暂无学生数据。
+                        </div>
+                    `;
+                }
+
+                mainContent.innerHTML = `
+                    <h4 class="mb-4">学生管理</h4>
+                    
+                    <div class="mb-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="搜索学生..." id="studentSearch">
+                            <button class="btn btn-outline-secondary" type="button" onclick="searchStudents()">
+                                搜索
+                            </button>
+                        </div>
+                    </div>
+                    
+                    ${studentsHTML}
+                `;
+
+                // 添加搜索功能
+                const searchInput = document.getElementById('studentSearch');
+                searchInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        searchStudents();
+                    }
+                });
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 搜索学生
+        function searchStudents() {
+            const searchTerm = document.getElementById('studentSearch').value.trim();
+            alert(`搜索功能开发中，搜索词：${searchTerm}`);
+            // 实际实现：重新调用API并过滤学生列表
+        }
+
+        // 查看学生成绩
+        function viewStudentGrades(studentId, courseId) {
+            loadGrades();
+            // 实际实现：可以预选该学生和课程
+        }
+
+        // 加载成绩管理
+        async function loadGrades() {
+            try {
+                // 获取成绩数据
+                const response = await fetch('/api/teacher/grades');
+                const grades = response.ok ? await response.json() : [];
+
+                const mainContent = document.getElementById('mainContent');
+
+                let gradesHTML = '';
+                if (grades.length > 0) {
+                    gradesHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>学号</th>
+                                        <th>姓名</th>
+                                        <th>课程</th>
+                                        <th>平时成绩</th>
+                                        <th>期末成绩</th>
+                                        <th>总成绩</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${grades.map(grade => `
+                                        <tr>
+                                            <td>${grade.student_id}</td>
+                                            <td>${grade.student_name}</td>
+                                            <td>${grade.course_name}</td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm grade-input" 
+                                                       value="${grade.regular_score || ''}" 
+                                                       data-student="${grade.student_id}" 
+                                                       data-course="${grade.course_id}"
+                                                       data-type="regular">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm grade-input" 
+                                                       value="${grade.final_score || ''}" 
+                                                       data-student="${grade.student_id}" 
+                                                       data-course="${grade.course_id}"
+                                                       data-type="final">
+                                            </td>
+                                            <td>${grade.grade || '-'}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-success" onclick="saveGrade('${grade.student_id}', '${grade.course_id}')">
+                                                    保存
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-primary" onclick="saveAllGrades()">
+                                保存所有更改
+                            </button>
+                            <button class="btn btn-secondary ms-2" onclick="loadGrades()">
+                                取消
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    gradesHTML = `
+                        <div class="alert alert-warning">
+                            暂无成绩数据。
+                        </div>
+                    `;
+                }
+
+                mainContent.innerHTML = `
+                    <h4 class="mb-4">成绩管理</h4>
+                    
+                    <div class="alert alert-info mb-4">
+                        请输入0-100之间的分数，系统会自动计算总成绩。
+                    </div>
+                    
+                    ${gradesHTML}
+                `;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 保存单个成绩
+        async function saveGrade(studentId, courseId) {
+            // 获取输入框的值
+            const regularInput = document.querySelector(`input[data-student="${studentId}"][data-course="${courseId}"][data-type="regular"]`);
+            const finalInput = document.querySelector(`input[data-student="${studentId}"][data-course="${courseId}"][data-type="final"]`);
+
+            const regularScore = regularInput ? regularInput.value : null;
+            const finalScore = finalInput ? finalInput.value : null;
+
+            if ((regularScore && (regularScore < 0 || regularScore > 100)) ||
+                (finalScore && (finalScore < 0 || finalScore > 100))) {
+                alert('请输入0-100之间的有效分数');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/teacher/grades/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        course_id: courseId,
+                        regular_score: regularScore,
+                        final_score: finalScore
+                    })
+                });
+
+                if (response.ok) {
+                    alert('成绩保存成功');
+                    loadGrades(); // 重新加载页面
+                } else {
+                    const error = await response.json();
+                    alert('保存失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 保存所有成绩
+        async function saveAllGrades() {
+            if (!confirm('确定要保存所有成绩更改吗？')) return;
+
+            const gradeInputs = document.querySelectorAll('.grade-input');
+            const updates = [];
+
+            gradeInputs.forEach(input => {
+                const studentId = input.dataset.student;
+                const courseId = input.dataset.course;
+                const type = input.dataset.type;
+                const value = input.value;
+
+                if (value && (value < 0 || value > 100)) {
+                    alert(`请检查${studentId}的${type === 'regular' ? '平时' : '期末'}成绩，必须在0-100之间`);
+                    return;
+                }
+
+                // 查找或创建更新记录
+                let update = updates.find(u => u.student_id === studentId && u.course_id === courseId);
+                if (!update) {
+                    update = { student_id: studentId, course_id: courseId };
+                    updates.push(update);
+                }
+
+                update[`${type}_score`] = value;
+            });
+
+            if (updates.length === 0) {
+                alert('没有需要保存的更改');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/teacher/grades/batch-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ updates })
+                });
+
+                if (response.ok) {
+                    alert(`成功保存${updates.length}条成绩记录`);
+                    loadGrades(); // 重新加载页面
+                } else {
+                    const error = await response.json();
+                    alert('保存失败：' + (error.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 加载个人中心
+        async function loadProfile() {
+            try {
+                // 获取教师详细信息
+                const response = await fetch('/api/auth/current-user');
+                if (!response.ok) throw new Error('获取教师信息失败');
+                const teacher = await response.json();
+
+                const mainContent = document.getElementById('mainContent');
+                mainContent.innerHTML = `
+                    <h4 class="mb-4">个人中心</h4>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="teacherProfileForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">教师工号</label>
+                                        <input type="text" class="form-control" value="${teacher.user_id || ''}" disabled>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">用户名</label>
+                                        <input type="text" class="form-control" value="${teacher.username || ''}" disabled>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">姓名</label>
+                                        <input type="text" class="form-control" id="teacherNameInput" value="${teacher.name || ''}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">邮箱</label>
+                                        <input type="email" class="form-control" id="teacherEmail" value="${teacher.email || ''}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">院系</label>
+                                        <input type="text" class="form-control" id="teacherDepartment" value="${teacher.department || ''}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">职称</label>
+                                        <input type="text" class="form-control" id="teacherTitle" value="${teacher.title || ''}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">办公室</label>
+                                        <input type="text" class="form-control" id="teacherOffice" value="${teacher.office || ''}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary">保存更改</button>
+                                    <button type="button" class="btn btn-secondary ms-2" onclick="loadPage('dashboard')">
+                                        取消
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+                // 添加表单提交事件
+                document.getElementById('teacherProfileForm').addEventListener('submit', async function (e) {
+                    e.preventDefault();
+
+                    const updateData = {
+                        name: document.getElementById('teacherNameInput').value,
+                        email: document.getElementById('teacherEmail').value,
+                        department: document.getElementById('teacherDepartment').value,
+                        title: document.getElementById('teacherTitle').value,
+                        office: document.getElementById('teacherOffice').value
+                    };
+
+                    try {
+                        const response = await fetch('/api/teacher/update-profile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(updateData)
+                        });
+
+                        if (response.ok) {
+                            alert('个人信息更新成功');
+                            location.reload(); // 刷新页面以更新显示
+                        } else {
+                            const error = await response.json();
+                            alert('更新失败：' + (error.message || '未知错误'));
+                        }
+                    } catch (error) {
+                        alert('网络错误，请稍后重试');
+                    }
+                });
+            } catch (error) {
+                throw error;
+            }
+        }
+    </script>
+</body>
+
+</html>
