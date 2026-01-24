@@ -1,5 +1,5 @@
 # backend/routes/auth.py - 用户认证路由
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 from backend import models
 from backend.app import db
 from backend.utils.security import SecurityUtils
@@ -63,7 +63,7 @@ def login():
     return jsonify(user_info)
 
 # 用户注销
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['GET'])
 def logout():
     # 记录日志
     if 'user_id' in session:
@@ -79,7 +79,17 @@ def logout():
     
     # 清除会话
     session.clear()
-    return jsonify({'message': '已注销'})
+    
+    # 判断请求类型：如果是AJAX请求，返回JSON；否则重定向
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # AJAX请求（来自JavaScript的fetch/ajax）
+        return jsonify({
+            'message': '已注销',
+            'redirect': '/'
+        })
+    else:
+        # 直接访问链接（用户点击链接）
+        return redirect('/')
 
 # 获取当前用户信息
 @auth_bp.route('/current-user')
