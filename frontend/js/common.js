@@ -6,41 +6,54 @@ const API_BASE = '/api';
 // ==================== 消息显示功能 ====================
 
 /**
- * 显示消息提示
- * @param {string} message - 要显示的消息内容
- * @param {string} type - 消息类型: 'success', 'danger', 'warning', 'info'
+ * 全局统一提示框（管理员端同款）
+ * @param {string} message - 提示内容
+ * @param {string} type - 类型：success/warning/danger/info
+ * @param {number} duration - 自动关闭时间（毫秒，默认3000）
  */
-function showMessage(message, type = 'info') {
-    // 创建消息元素
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
-    messageDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+function showMessage(message, type = 'info', duration = 3000) {
+  // 移除已存在的提示框，避免重复
+  const oldToast = document.getElementById('messageToast');
+  if (oldToast) oldToast.remove();
 
-    // 尝试添加到页面合适的位置
-    let container = document.querySelector('.container');
-    if (!container) {
-        container = document.querySelector('.container-fluid');
-    }
-    if (!container) {
-        container = document.body;
-    }
+  // 创建提示框DOM
+  const toast = document.createElement('div');
+  toast.id = 'messageToast';
+  toast.className = type;
+  toast.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i class="bi bi-${getIconByType(type)}"></i>
+      <span>${message}</span>
+    </div>
+  `;
 
-    if (container) {
-        // 添加到容器顶部
-        container.prepend(messageDiv);
+  // 添加到页面
+  document.body.appendChild(toast);
 
-        // 3秒后自动消失（如果是success或info类型）
-        if (type === 'success' || type === 'info') {
-            setTimeout(() => {
-                if (messageDiv.parentNode) {
-                    messageDiv.remove();
-                }
-            }, 3000);
-        }
-    }
+  // 显示提示框（触发动画）
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+
+  // 自动关闭
+  setTimeout(() => {
+    toast.classList.remove('show');
+    // 动画结束后移除DOM
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+/**
+ * 根据类型匹配图标
+ */
+function getIconByType(type) {
+  switch (type) {
+    case 'success': return 'check-circle-fill';
+    case 'warning': return 'exclamation-triangle-fill';
+    case 'danger': return 'x-circle-fill';
+    case 'info': return 'info-circle-fill';
+    default: return 'info-circle-fill';
+  }
 }
 
 // ==================== API调用功能 ====================

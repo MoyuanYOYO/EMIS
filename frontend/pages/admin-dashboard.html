@@ -5,109 +5,418 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员仪表板 - 教务管理系统</title>
+
+    <!-- Bootstrap 5 CSS -->
     <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <!-- 通用工具 -->
-    <script src="/js/common.js"></script>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- 自定义CSS -->
     <link href="/css/style.css" rel="stylesheet">
+
+    <!-- 管理员特定样式 -->
     <style>
+        /* 管理员主题颜色 */
+        :root {
+            --admin-primary: #4a6ee0;
+            --admin-secondary: #6c757d;
+            --admin-success: #28a745;
+            --admin-danger: #dc3545;
+            --admin-warning: #ffc107;
+            --admin-info: #17a2b8;
+        }
+
+        /* 导航栏样式 */
+        .navbar-admin {
+            background: linear-gradient(135deg, var(--admin-primary) 0%, #3a5ed0 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-admin .navbar-brand {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .navbar-admin .navbar-brand:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 侧边栏样式 */
+        .admin-sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            min-height: calc(100vh - 56px);
+        }
+
+        .admin-sidebar .nav-link {
+            color: #495057;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .admin-sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: var(--admin-primary);
+        }
+
+        .admin-sidebar .nav-link.active {
+            background-color: var(--admin-primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .admin-sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            margin-right: 10px;
+        }
+
+        /* 管理员信息卡片 */
+        .admin-info-card {
+            background: linear-gradient(135deg, var(--admin-primary) 0%, #3a5ed0 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .admin-info-card .admin-avatar {
+            width: 60px;
+            height: 60px;
+            background: white;
+            color: var(--admin-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+
+        /* 统计卡片样式 */
         .stat-card {
-            transition: transform 0.3s ease;
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .chart-container {
-            height: 300px;
-            position: relative;
+        .stat-card .card-header {
+            border: none;
+            font-weight: 600;
+        }
+
+        .stat-card .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        /* 表格样式增强 */
+        .table-admin {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-admin thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .table-admin tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .table-admin tbody tr:hover {
+            background-color: rgba(74, 110, 224, 0.05);
+        }
+
+        /* 按钮样式 */
+        .btn-admin {
+            background-color: var(--admin-primary);
+            border-color: var(--admin-primary);
+            color: white;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+
+        .btn-admin:hover {
+            background-color: #3a5ed0;
+            border-color: #3a5ed0;
+            color: white;
+        }
+
+        .btn-outline-admin {
+            border-color: var(--admin-primary);
+            color: var(--admin-primary);
+        }
+
+        .btn-outline-admin:hover {
+            background-color: var(--admin-primary);
+            color: white;
+        }
+
+        /* 徽章样式 */
+        .badge-admin {
+            background-color: var(--admin-primary);
+        }
+
+        .badge-success-admin {
+            background-color: var(--admin-success);
+        }
+
+        .badge-danger-admin {
+            background-color: var(--admin-danger);
+        }
+
+        .badge-warning-admin {
+            background-color: var(--admin-warning);
+        }
+
+        .badge-info-admin {
+            background-color: var(--admin-info);
+        }
+
+        /* 面包屑导航 */
+        .breadcrumb-admin {
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb-admin .breadcrumb-item a {
+            color: var(--admin-primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-admin .breadcrumb-item.active {
+            color: #6c757d;
+        }
+
+        /* 加载动画 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                min-height: auto;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+
+            .stat-card .stat-number {
+                font-size: 2rem;
+            }
+
+            .navbar-admin .navbar-brand {
+                font-size: 1rem;
+            }
+        }
+
+        /* 安全状态指示器 */
+        .security-status {
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .security-status.safe {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--admin-success);
+        }
+
+        .security-status.warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--admin-warning);
+        }
+
+        .security-status.danger {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--admin-danger);
+        }
+
+        /* 模态框样式 */
+        .modal-admin .modal-header {
+            background-color: var(--admin-primary);
+            color: white;
+        }
+
+        .modal-admin .modal-footer {
+            border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
 
 <body>
     <!-- 导航栏 -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-admin">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">
-                🛡️ 教务管理系统 - 管理员端
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-shield-check me-2"></i>
+                教务管理系统 - 管理员端
             </a>
-            <div class="d-flex align-items-center">
-                <span class="navbar-text me-3" id="adminName">管理员</span>
-                <div class="dropdown">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="userMenu"
-                        data-bs-toggle="dropdown">
-                        <span id="currentUser">admin</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#" onclick="loadPage('profile')">个人信息</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" href="/api/auth/logout">注销</a></li>
-                    </ul>
-                </div>
+
+            <!-- 移动端切换按钮 -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="adminNavbar">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <span class="navbar-text text-white me-3" id="adminName">
+                            <i class="bi bi-person-circle me-1"></i>
+                            加载中...
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="btn btn-sm btn-outline-light" id="logoutBtn">
+                            <i class="bi bi-box-arrow-right me-1"></i>
+                            注销
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
 
     <!-- 主体内容 -->
-    <div class="container-fluid mt-3">
+    <div class="container-fluid">
         <div class="row">
             <!-- 侧边栏 -->
-            <div class="col-lg-2 col-md-3 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <ul class="nav flex-column" id="sidebarMenu">
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="dashboard">
-                                    仪表板
-                                </button>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="users">
-                                    用户管理
-                                </button>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="students">
-                                    学生管理
-                                </button>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="teachers">
-                                    教师管理
-                                </button>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="courses">
-                                    课程管理
-                                </button>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="logs">
-                                    系统日志
-                                </button>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <button class="btn btn-outline-primary w-100 text-start" data-page="security">
-                                    安全审计
-                                </button>
-                            </li>
-                        </ul>
+            <div class="col-lg-2 col-md-3 admin-sidebar p-0 d-print-none">
+                <div class="p-3">
+                    <!-- 管理员信息卡片 -->
+                    <div class="admin-info-card d-none d-md-block">
+                        <div class="admin-avatar" id="adminAvatar">
+                            管
+                        </div>
+                        <div class="text-center">
+                            <h6 class="mb-1" id="sidebarAdminName">管理员</h6>
+                            <p class="small mb-1" id="sidebarAdminId">ID: 加载中...</p>
+                            <p class="small mb-0" id="sidebarAdminRole">角色: 管理员</p>
+                        </div>
+                    </div>
+
+                    <!-- 导航菜单 -->
+                    <nav class="nav flex-column">
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="dashboard">
+                            <i class="bi bi-speedometer2"></i> 仪表板
+                        </button>
+
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="users">
+                            <i class="bi bi-people"></i> 用户管理
+                        </button>
+
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="students">
+                            <i class="bi bi-mortarboard"></i> 学生管理
+                        </button>
+
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="teachers">
+                            <i class="bi bi-person-badge"></i> 教师管理
+                        </button>
+
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="courses">
+                            <i class="bi bi-book"></i> 课程管理
+                        </button>
+
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="audit">
+                            <i class="bi bi-journal-text"></i> 操作审计
+                        </button>
+
+                        <button class="btn btn-outline-admin text-start mb-2" data-page="security">
+                            <i class="bi bi-shield-check"></i> 安全监控
+                        </button>
+                    </nav>
+
+                    <!-- 系统状态 -->
+                    <div class="card mt-4">
+                        <div class="card-body p-2">
+                            <div class="row text-center small">
+                                <div class="col-12">
+                                    <i class="bi bi-circle-fill text-success me-1"></i>
+                                    <span class="text-muted">系统正常</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 主要内容区 -->
-            <div class="col-lg-10 col-md-9">
-                <div class="card">
-                    <div class="card-body" id="mainContent">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">加载中...</span>
+            <!-- 主内容区域 -->
+            <div class="col-lg-10 col-md-9 p-3">
+                <!-- 面包屑导航 -->
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb breadcrumb-admin" id="breadcrumb">
+                        <li class="breadcrumb-item active">仪表板</li>
+                    </ol>
+                </nav>
+
+                <!-- 主内容卡片 -->
+                <div class="card shadow-sm">
+                    <div class="card-body p-0">
+                        <div id="mainContent">
+                            <!-- 内容将由JavaScript动态加载 -->
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="mt-3">正在加载管理员仪表板...</p>
                             </div>
-                            <p class="mt-3">正在加载管理员仪表板...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 页脚信息 -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body p-2">
+                                <div class="row text-center">
+                                    <div class="col-md-4 col-sm-12 mb-2 mb-md-0">
+                                        <small class="text-muted">
+                                            <i class="bi bi-shield-check text-success me-1"></i>
+                                            数据安全：启用AES-256加密
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 col-sm-12 mb-2 mb-md-0">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            最后更新：<span id="lastUpdateTime">刚刚</span>
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 col-sm-12">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            技术支持：吴泽原
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -115,488 +424,588 @@
         </div>
     </div>
 
+    <!-- 模态框容器（用于动态创建模态框） -->
+    <div id="modalContainer"></div>
+
+    <!-- 消息容器（用于显示临时消息） -->
+    <div id="messageContainer" style="position: fixed; top: 70px; right: 20px; z-index: 1050; max-width: 400px;"></div>
+
+    <!-- JavaScript文件 -->
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 公共工具函数 -->
+    <script src="/js/common.js"></script>
+
+    <!-- 管理员功能模块 -->
+    <script src="/js/admin.js"></script>
+
+    <!-- 页面初始化脚本 -->
     <script>
+        // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', function () {
-            checkAdminStatus();
-            initializePage();
+            console.log('管理员页面DOM加载完成');
+
+            // 设置最后更新时间
+            updateLastUpdateTime();
+
+            // 每分钟更新一次时间
+            setInterval(updateLastUpdateTime, 60000);
+
+            // 绑定侧边栏按钮点击事件
+            bindSidebarEvents();
+
+            // 检查URL参数，如果有指定页面则加载
+            checkUrlPageParam();
+
+            // 添加键盘快捷键
+            setupKeyboardShortcuts();
         });
 
-        // 检查管理员状态
-        async function checkAdminStatus() {
-            try {
-                const response = await fetch('/api/auth/current-user');
-                if (!response.ok) {
-                    window.location.href = '/';
-                    return;
-                }
+        /**
+         * 更新最后更新时间显示
+         */
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('zh-CN');
 
-                const user = await response.json();
-                if (user.role !== 'admin') {
-                    alert('权限不足，需要管理员权限');
-                    window.location.href = '/';
-                    return;
-                }
-
-                document.getElementById('adminName').textContent = user.name || user.username;
-                document.getElementById('currentUser').textContent = user.username;
-            } catch (error) {
-                console.error('检查登录状态失败:', error);
-                window.location.href = '/';
+            const timeElement = document.getElementById('lastUpdateTime');
+            if (timeElement) {
+                timeElement.textContent = `${dateString} ${timeString}`;
             }
         }
 
-        // 初始化页面
-        function initializePage() {
-            const sidebarButtons = document.querySelectorAll('#sidebarMenu button');
+        /**
+         * 绑定侧边栏事件
+         */
+        function bindSidebarEvents() {
+            const sidebarButtons = document.querySelectorAll('.admin-sidebar button[data-page]');
             sidebarButtons.forEach(button => {
                 button.addEventListener('click', function () {
+                    const page = this.getAttribute('data-page');
+
+                    // 更新按钮激活状态
                     sidebarButtons.forEach(btn => {
-                        btn.classList.remove('active', 'btn-primary');
-                        btn.classList.add('btn-outline-primary');
+                        btn.classList.remove('active', 'btn-admin');
+                        btn.classList.add('btn-outline-admin');
                     });
 
-                    this.classList.remove('btn-outline-primary');
-                    this.classList.add('active', 'btn-primary');
+                    this.classList.remove('btn-outline-admin');
+                    this.classList.add('active', 'btn-admin');
 
-                    const page = this.dataset.page;
-                    loadPage(page);
+                    // 加载页面
+                    if (typeof adminDashboard !== 'undefined' && adminDashboard.loadPage) {
+                        adminDashboard.loadPage(page);
+                    }
+
+                    // 更新面包屑导航
+                    updateBreadcrumb(page);
+
+                    // 更新URL（不刷新页面）
+                    updateUrlPageParam(page);
                 });
             });
-
-            loadPage('dashboard');
         }
 
-        // 加载页面
-        async function loadPage(page) {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">加载中...</span>
-                    </div>
-                    <p class="mt-3">正在加载...</p>
-                </div>
-            `;
+        /**
+         * 更新面包屑导航
+         */
+        function updateBreadcrumb(page) {
+            const breadcrumb = document.getElementById('breadcrumb');
+            if (!breadcrumb) return;
 
-            try {
-                switch (page) {
-                    case 'dashboard':
-                        await loadDashboard();
-                        break;
-                    case 'users':
-                        await loadUsers();
-                        break;
-                    case 'students':
-                        await loadStudents();
-                        break;
-                    case 'teachers':
-                        await loadTeachers();
-                        break;
-                    case 'courses':
-                        await loadCourses();
-                        break;
-                    case 'logs':
-                        await loadLogs();
-                        break;
-                    case 'security':
-                        await loadSecurity();
-                        break;
-                    case 'profile':
-                        await loadProfile();
-                        break;
-                    default:
-                        await loadDashboard();
+            const pageNames = {
+                'dashboard': '仪表板',
+                'users': '用户管理',
+                'students': '学生管理',
+                'teachers': '教师管理',
+                'courses': '课程管理',
+                'audit': '操作审计',
+                'security': '安全监控'
+            };
+
+            const pageName = pageNames[page] || page;
+
+            breadcrumb.innerHTML = `
+                <li class="breadcrumb-item">
+                    <a href="#" onclick="loadPage('dashboard')">首页</a>
+                </li>
+                <li class="breadcrumb-item active">${pageName}</li>
+            `;
+        }
+
+        /**
+         * 检查URL参数并加载相应页面
+         */
+        function checkUrlPageParam() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const page = urlParams.get('page');
+
+            if (page && typeof adminDashboard !== 'undefined' && adminDashboard.loadPage) {
+                // 找到对应的侧边栏按钮并点击
+                const sidebarButton = document.querySelector(`.admin-sidebar button[data-page="${page}"]`);
+                if (sidebarButton) {
+                    sidebarButton.click();
                 }
-            } catch (error) {
-                console.error('加载页面失败:', error);
-                showError('加载页面失败: ' + error.message);
             }
         }
 
-        // 显示错误
-        function showError(message) {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <h5 class="alert-heading">错误</h5>
-                    <p>${message}</p>
-                    <button class="btn btn-primary" onclick="location.reload()">刷新页面</button>
-                </div>
-            `;
+        /**
+         * 更新URL页面参数
+         */
+        function updateUrlPageParam(page) {
+            const url = new URL(window.location);
+            if (page === 'dashboard') {
+                url.searchParams.delete('page');
+            } else {
+                url.searchParams.set('page', page);
+            }
+            window.history.pushState({}, '', url);
         }
 
-        // 加载仪表板
-        async function loadDashboard() {
-            try {
-                // 获取统计数据
-                const [usersRes, studentsRes, teachersRes, coursesRes, logsRes] = await Promise.all([
-                    fetch('/api/admin/stats/users'),
-                    fetch('/api/admin/stats/students'),
-                    fetch('/api/admin/stats/teachers'),
-                    fetch('/api/admin/stats/courses'),
-                    fetch('/api/admin/stats/logs')
-                ]);
+        /**
+         * 加载页面（供面包屑导航使用）
+         */
+        function loadPage(page) {
+            if (typeof adminDashboard !== 'undefined' && adminDashboard.loadPage) {
+                adminDashboard.loadPage(page);
+            }
+            updateUrlPageParam(page);
+            return false; // 阻止链接默认行为
+        }
 
-                // 由于这些API端点可能还未实现，我们使用模拟数据
-                const stats = {
-                    totalUsers: 150,
-                    activeUsers: 142,
-                    totalStudents: 120,
-                    totalTeachers: 25,
-                    totalCourses: 45,
-                    activeCourses: 40,
-                    recentLogs: 256
-                };
+        /**
+         * 设置键盘快捷键
+         */
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function (e) {
+                // 检查是否在输入框中，如果是则不触发快捷键
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+                    return;
+                }
 
-                const mainContent = document.getElementById('mainContent');
-                mainContent.innerHTML = `
-                    <h4 class="mb-4">系统仪表板</h4>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-3 mb-3">
-                            <div class="card stat-card bg-primary text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">用户总数</h5>
-                                    <h2 class="display-4">${stats.totalUsers}</h2>
-                                    <p class="card-text">${stats.activeUsers} 活跃用户</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card stat-card bg-success text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">学生</h5>
-                                    <h2 class="display-4">${stats.totalStudents}</h2>
-                                    <p class="card-text">在读学生</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card stat-card bg-info text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">教师</h5>
-                                    <h2 class="display-4">${stats.totalTeachers}</h2>
-                                    <p class="card-text">在职教师</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="card stat-card bg-warning text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">课程</h5>
-                                    <h2 class="display-4">${stats.totalCourses}</h2>
-                                    <p class="card-text">${stats.activeCourses} 门进行中</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">近期活动</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="alert alert-info">
-                                        <p class="mb-0">系统日志功能已记录 ${stats.recentLogs} 条操作记录</p>
-                                        <a href="#" class="btn btn-sm btn-primary mt-2" onclick="loadPage('logs')">查看日志</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">快速操作</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-grid gap-2">
-                                        <button class="btn btn-outline-primary" data-page="users">管理用户</button>
-                                        <button class="btn btn-outline-success" data-page="courses">管理课程</button>
-                                        <button class="btn btn-outline-info" data-page="logs">查看日志</button>
-                                        <button class="btn btn-outline-warning" data-page="security">安全审计</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card mt-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">系统信息</h5>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item">
-                                    <strong>系统版本：</strong>教务管理系统 v1.0
-                                </li>
-                                <li class="list-group-item">
-                                    <strong>数据加密：</strong>已启用（AES-256 + bcrypt）
-                                </li>
-                                <li class="list-group-item">
-                                    <strong>最后检查：</strong>${new Date().toLocaleString()}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                `;
+                // Alt + 数字键：快速导航
+                if (e.altKey) {
+                    switch (e.key) {
+                        case '1':
+                            e.preventDefault();
+                            loadPage('dashboard');
+                            break;
+                        case '2':
+                            e.preventDefault();
+                            loadPage('users');
+                            break;
+                        case '3':
+                            e.preventDefault();
+                            loadPage('students');
+                            break;
+                        case '4':
+                            e.preventDefault();
+                            loadPage('teachers');
+                            break;
+                        case '5':
+                            e.preventDefault();
+                            loadPage('courses');
+                            break;
+                        case '6':
+                            e.preventDefault();
+                            loadPage('audit');
+                            break;
+                        case '7':
+                            e.preventDefault();
+                            loadPage('security');
+                            break;
+                        case 'r':
+                        case 'R':
+                            e.preventDefault();
+                            if (typeof adminDashboard !== 'undefined' && adminDashboard.currentPage) {
+                                adminDashboard.loadPage(adminDashboard.currentPage);
+                            }
+                            break;
+                    }
+                }
 
-                // 添加快速操作按钮事件
-                mainContent.querySelectorAll('[data-page]').forEach(button => {
-                    button.addEventListener('click', function () {
-                        const page = this.dataset.page;
-                        loadPage(page);
+                // ESC键：关闭所有模态框
+                if (e.key === 'Escape') {
+                    const modals = document.querySelectorAll('.modal.show');
+                    modals.forEach(modal => {
+                        const modalInstance = bootstrap.Modal.getInstance(modal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
                     });
-                });
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        // 其他管理页面函数（用户管理、学生管理、教师管理、课程管理、日志管理、安全审计）
-        // 由于篇幅限制，这里只展示框架，实际实现需要调用相应的API端点
-
-        // 加载用户管理
-        async function loadUsers() {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4>用户管理</h4>
-                    <button class="btn btn-primary" onclick="addUser()">
-                        添加用户
-                    </button>
-                </div>
-                
-                <div class="alert alert-info">
-                    用户管理功能正在开发中...
-                </div>
-                
-                <div class="text-center py-5">
-                    <p class="text-muted">请等待后续更新</p>
-                </div>
-            `;
-        }
-
-        // 加载学生管理
-        async function loadStudents() {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <h4 class="mb-4">学生管理</h4>
-                <div class="alert alert-info">
-                    学生管理功能正在开发中...
-                </div>
-            `;
-        }
-
-        // 加载教师管理
-        async function loadTeachers() {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <h4 class="mb-4">教师管理</h4>
-                <div class="alert alert-info">
-                    教师管理功能正在开发中...
-                </div>
-            `;
-        }
-
-        // 加载课程管理
-        async function loadCourses() {
-            try {
-                const response = await fetch('/api/course/');
-                const result = await response.json();
-
-                let coursesHTML = '';
-                if (result.success && result.data && result.data.length > 0) {
-                    coursesHTML = `
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>课程号</th>
-                                        <th>课程名称</th>
-                                        <th>学分</th>
-                                        <th>类型</th>
-                                        <th>学期</th>
-                                        <th>教师</th>
-                                        <th>容量</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${result.data.map(course => `
-                                        <tr>
-                                            <td>${course.course_id}</td>
-                                            <td>${course.course_name}</td>
-                                            <td>${course.credits}</td>
-                                            <td>
-                                                <span class="badge ${course.type === 'compulsory' ? 'bg-primary' : course.type === 'elective' ? 'bg-success' : 'bg-info'}">
-                                                    ${course.type_name}
-                                                </span>
-                                            </td>
-                                            <td>${course.semester}</td>
-                                            <td>${course.teacher_name}</td>
-                                            <td>${course.current_enrollment}/${course.capacity}</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary" onclick="viewCourse('${course.course_id}')">
-                                                    查看
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteCourse('${course.course_id}', '${course.course_name}')">
-                                                    删除
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                } else {
-                    coursesHTML = `
-                        <div class="alert alert-warning">
-                            暂无课程数据
-                        </div>
-                    `;
                 }
+            });
+        }
 
-                const mainContent = document.getElementById('mainContent');
-                mainContent.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4>课程管理</h4>
-                        <div>
-                            <button class="btn btn-outline-primary" onclick="searchCourses()">
-                                搜索课程
-                            </button>
-                            <button class="btn btn-primary ms-2" onclick="addCourse()">
-                                添加课程
-                            </button>
+        /**
+         * 显示加载覆盖层
+         */
+        function showLoadingOverlay(message = '加载中...') {
+            let overlay = document.getElementById('loadingOverlay');
+
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'loadingOverlay';
+                overlay.className = 'loading-overlay';
+                overlay.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">加载中...</span>
                         </div>
+                        <p class="mt-3 fs-5">${message}</p>
                     </div>
-                    
-                    ${coursesHTML}
                 `;
-            } catch (error) {
-                throw error;
+                document.body.appendChild(overlay);
+            } else {
+                overlay.style.display = 'flex';
             }
         }
 
-        // 查看课程详情
-        function viewCourse(courseId) {
-            alert(`查看课程: ${courseId} (功能开发中)`);
-        }
-
-        // 删除课程
-        async function deleteCourse(courseId, courseName) {
-            if (!confirm(`确定要删除课程 "${courseName}" 吗？此操作不可恢复！`)) return;
-
-            try {
-                const response = await fetch(`/api/course/${courseId}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    alert('课程删除成功');
-                    loadCourses();
-                } else {
-                    alert('删除失败: ' + result.error);
-                }
-            } catch (error) {
-                alert('网络错误，请稍后重试');
+        /**
+         * 隐藏加载覆盖层
+         */
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
             }
         }
 
-        // 搜索课程
-        function searchCourses() {
-            alert('搜索功能开发中');
-        }
-
-        // 添加课程
-        function addCourse() {
-            alert('添加课程功能开发中');
-        }
-
-        // 加载日志管理
-        async function loadLogs() {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <h4 class="mb-4">系统日志</h4>
-                <div class="alert alert-info">
-                    日志管理功能正在开发中...
-                </div>
-            `;
-        }
-
-        // 加载安全审计
-        async function loadSecurity() {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <h4 class="mb-4">安全审计</h4>
-                <div class="alert alert-success">
-                    <h5 class="alert-heading">安全状态良好</h5>
-                    <ul class="mb-0">
-                        <li>敏感信息加密：已启用（身份证、手机号）</li>
-                        <li>密码存储：bcrypt加盐哈希</li>
-                        <li>成绩完整性保护：SHA-256哈希校验</li>
-                        <li>操作日志：已启用审计跟踪</li>
-                    </ul>
-                </div>
-            `;
-        }
-
-        // 加载个人信息
-        async function loadProfile() {
-            try {
-                const response = await fetch('/api/auth/current-user');
-                const user = await response.json();
-
-                const mainContent = document.getElementById('mainContent');
-                mainContent.innerHTML = `
-                    <h4 class="mb-4">管理员信息</h4>
-                    
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">用户名</label>
-                                        <p class="fs-5">${user.username}</p>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">角色</label>
-                                        <p class="fs-5">
-                                            <span class="badge bg-danger">管理员</span>
-                                        </p>
-                                    </div>
+        /**
+         * 显示操作确认对话框
+         */
+        function showConfirmDialog(title, message, confirmText = '确定', cancelText = '取消') {
+            return new Promise((resolve) => {
+                const modalHTML = `
+                    <div class="modal fade" id="confirmDialogModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">${title}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">用户ID</label>
-                                        <p class="fs-5">${user.user_id}</p>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">状态</label>
-                                        <p class="fs-5">
-                                            <span class="badge ${user.status === 'active' ? 'bg-success' : 'bg-warning'}">
-                                                ${user.status === 'active' ? '活跃' : '禁用'}
-                                            </span>
-                                        </p>
-                                    </div>
+                                <div class="modal-body">
+                                    <p>${message}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelBtn">${cancelText}</button>
+                                    <button type="button" class="btn btn-primary" id="confirmBtn">${confirmText}</button>
                                 </div>
                             </div>
-                            
-                            ${user.last_login ? `
-                                <div class="alert alert-info">
-                                    <strong>最后登录：</strong>${new Date(user.last_login).toLocaleString()}
-                                </div>
-                            ` : ''}
                         </div>
                     </div>
                 `;
-            } catch (error) {
-                throw error;
+
+                const modalContainer = document.getElementById('modalContainer');
+                modalContainer.innerHTML = modalHTML;
+
+                const modal = new bootstrap.Modal(document.getElementById('confirmDialogModal'));
+                modal.show();
+
+                document.getElementById('confirmBtn').addEventListener('click', () => {
+                    modal.hide();
+                    resolve(true);
+                });
+
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    modal.hide();
+                    resolve(false);
+                });
+
+                // 监听模态框隐藏事件
+                document.getElementById('confirmDialogModal').addEventListener('hidden.bs.modal', () => {
+                    resolve(false);
+                });
+            });
+        }
+
+        /**
+         * 显示成功消息
+         */
+        function showSuccessMessage(message, duration = 3000) {
+            showMessage(message, 'success', duration);
+        }
+
+        /**
+         * 显示错误消息
+         */
+        function showErrorMessage(message, duration = 5000) {
+            showMessage(message, 'danger', duration);
+        }
+
+        /**
+         * 显示警告消息
+         */
+        function showWarningMessage(message, duration = 4000) {
+            showMessage(message, 'warning', duration);
+        }
+
+        /**
+         * 显示信息消息
+         */
+        function showInfoMessage(message, duration = 4000) {
+            showMessage(message, 'info', duration);
+        }
+
+        /**
+         * 显示消息（通用函数）
+         */
+        function showMessage(message, type = 'info', duration = 3000) {
+            const messageContainer = document.getElementById('messageContainer');
+
+            // 创建消息元素
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            messageDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            // 添加到消息容器
+            messageContainer.appendChild(messageDiv);
+
+            // 自动消失（如果是成功或信息类型）
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, duration);
             }
+
+            // 确保消息容器最多显示3条消息
+            while (messageContainer.children.length > 3) {
+                messageContainer.removeChild(messageContainer.firstChild);
+            }
+        }
+
+        /**
+         * 复制文本到剪贴板
+         */
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showSuccessMessage('已复制到剪贴板');
+                return true;
+            } catch (error) {
+                console.error('复制失败:', error);
+                showErrorMessage('复制失败，请手动复制');
+                return false;
+            }
+        }
+
+        /**
+         * 格式化日期时间
+         */
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString;
+
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+
+                return `${year}-${month}-${day} ${hours}:${minutes}`;
+            } catch (error) {
+                return dateString;
+            }
+        }
+
+        /**
+         * 验证邮箱格式
+         */
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        /**
+         * 验证手机号格式（中国）
+         */
+        function isValidPhone(phone) {
+            const phoneRegex = /^1[3-9]\d{9}$/;
+            return phoneRegex.test(phone);
+        }
+
+        /**
+         * 验证身份证号格式（中国）
+         */
+        function isValidIdCard(idCard) {
+            if (!idCard) return false;
+
+            // 基本格式验证
+            const idCardRegex = /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dX]$/;
+            if (!idCardRegex.test(idCard)) {
+                return false;
+            }
+
+            // 校验码验证
+            const idCardArray = idCard.split('');
+
+            // 加权因子
+            const factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+
+            // 校验码对应值
+            const parity = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+
+            let sum = 0;
+            for (let i = 0; i < 17; i++) {
+                sum += parseInt(idCardArray[i]) * factor[i];
+            }
+
+            const mod = sum % 11;
+            return parity[mod] === idCardArray[17].toUpperCase();
+        }
+
+        /**
+         * 页面卸载前的确认
+         */
+        window.addEventListener('beforeunload', function (e) {
+            // 检查是否有未保存的更改
+            const unsavedChanges = document.querySelectorAll('[data-unsaved="true"]');
+
+            if (unsavedChanges.length > 0) {
+                e.preventDefault();
+                e.returnValue = '您有未保存的更改，确定要离开吗？';
+            }
+        });
+
+        /**
+         * 标记表单为有未保存的更改
+         */
+        function markFormAsUnsaved(formId) {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.setAttribute('data-unsaved', 'true');
+
+                // 监听表单变化
+                form.addEventListener('change', function () {
+                    this.setAttribute('data-unsaved', 'true');
+                });
+
+                // 监听表单提交
+                form.addEventListener('submit', function () {
+                    this.removeAttribute('data-unsaved');
+                });
+            }
+        }
+
+        /**
+         * 清除表单未保存标记
+         */
+        function clearFormUnsavedMark(formId) {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.removeAttribute('data-unsaved');
+            }
+        }
+
+        /**
+         * 导出为Excel的模拟函数
+         */
+        function exportToExcel(data, filename = '导出数据') {
+            showInfoMessage('导出功能开发中，当前为模拟操作');
+
+            // 在实际项目中，这里应该调用后端API生成Excel文件
+            // 或者使用前端库如SheetJS来生成Excel
+
+            console.log('导出数据:', data);
+            console.log('文件名:', filename);
+
+            // 模拟延迟
+            setTimeout(() => {
+                showSuccessMessage(`数据已准备导出: ${filename}.xlsx`);
+            }, 1000);
+        }
+
+        /**
+         * 打印当前页面内容
+         */
+        function printPageContent() {
+            const mainContent = document.getElementById('mainContent');
+            const originalContent = mainContent.innerHTML;
+            const originalTitle = document.title;
+
+            // 设置打印标题
+            document.title = '教务管理系统 - 管理员报告';
+
+            // 只打印主内容区域
+            const printContent = mainContent.innerHTML;
+
+            // 创建打印窗口
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${document.title}</title>
+                    <link href="/css/bootstrap.min.css" rel="stylesheet">
+                    <style>
+                        body { font-family: "Microsoft YaHei", sans-serif; }
+                        .no-print { display: none; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; }
+                        th { background-color: #f8f9fa; }
+                        .text-center { text-align: center; }
+                        .mb-3 { margin-bottom: 1rem; }
+                        .mt-3 { margin-top: 1rem; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h3 class="text-center mb-3">${document.title}</h3>
+                        <p class="text-center mb-3">打印时间: ${new Date().toLocaleString('zh-CN')}</p>
+                        <hr>
+                        <div id="printContent">
+                            ${printContent}
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+
+            // 恢复原始状态
+            setTimeout(() => {
+                document.title = originalTitle;
+            }, 100);
+
+            // 打印
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+
+        /**
+         * 获取当前日期时间字符串
+         */
+        function getCurrentDateTimeString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            return `${year}${month}${day}_${hours}${minutes}${seconds}`;
         }
     </script>
 </body>

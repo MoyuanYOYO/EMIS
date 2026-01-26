@@ -334,6 +334,8 @@ def get_enrolled_courses():
 def enroll_course(course_id):
     """学生选课"""
     try:
+        import traceback  # 添加这行
+        
         student_id = get_current_student_id()
         
         # 验证课程是否存在
@@ -341,37 +343,49 @@ def enroll_course(course_id):
         if not course:
             return handle_api_error('课程不存在', 404)
         
-        # 检查是否已选
-        existing_enrollment = models.Enrollment.query.filter_by(
-            student_id=student_id,
-            course_id=course_id,
-            status='enrolled'
-        ).first()
-        
-        if existing_enrollment:
-            return handle_api_error('您已选择此课程', 400)
-        
-        # 检查课程容量
+        # 检查课程是否已满
         if course.current_enrollment >= course.capacity:
             return handle_api_error('课程已满，无法选择', 400)
         
-        # 检查选课时间（这里可以添加具体的选课时间限制逻辑）
-        # 示例：检查当前时间是否在选课时间内
-        # if not is_enrollment_period():
-        #     return handle_api_error('当前不在选课时间内', 400)
-        
-        # 创建选课记录
-        enrollment = models.Enrollment(
+        # 检查是否已有选课记录（包括已退选的）
+        existing_enrollment = models.Enrollment.query.filter_by(
             student_id=student_id,
-            course_id=course_id,
-            status='enrolled',
-            enroll_time=datetime.datetime.now()
-        )
+            course_id=course_id
+        ).first()
         
-        # 更新课程选课人数
-        course.current_enrollment += 1
+        if existing_enrollment:
+            if existing_enrollment.status == 'enrolled':
+                return handle_api_error('您已选择此课程', 400)
+            elif existing_enrollment.status == 'completed':
+                return handle_api_error('此课程已完成，无法重新选择', 400)
+            elif existing_enrollment.status == 'dropped':
+                # 重新选课：更新现有记录
+                existing_enrollment.status = 'enrolled'
+                existing_enrollment.enroll_time = datetime.datetime.now()
+                existing_enrollment.regular_score = None
+                existing_enrollment.final_score = None
+                existing_enrollment.grade = None
+                existing_enrollment.grade_hash = None
+                
+                # 重新选课时增加课程人数
+                course.current_enrollment += 1
+                
+                print(f"重新选课：学生 {student_id} 课程 {course_id}，从dropped状态恢复")
+        else:
+            # 创建新选课记录
+            existing_enrollment = models.Enrollment(
+                student_id=student_id,
+                course_id=course_id,
+                status='enrolled',
+                enroll_time=datetime.datetime.now()
+            )
+            db.session.add(existing_enrollment)
+            
+            # 新选课时增加课程人数
+            course.current_enrollment += 1
+            
+            print(f"新选课：学生 {student_id} 课程 {course_id}")
         
-        db.session.add(enrollment)
         db.session.commit()
         
         # 记录操作日志
@@ -387,16 +401,20 @@ def enroll_course(course_id):
         
         return create_response(
             data={
-                'enrollment_id': enrollment.enrollment_id,
+                'enrollment_id': existing_enrollment.enrollment_id,
                 'course_id': course.course_id,
                 'course_name': course.course_name,
-                'enroll_time': enrollment.enroll_time.isoformat()
+                'enroll_time': existing_enrollment.enroll_time.isoformat(),
+                'is_re_enroll': existing_enrollment.status == 'dropped'  # 这里判断是否是重新选课
             },
             message='选课成功'
         )
         
     except Exception as e:
         db.session.rollback()
+        print(f"选课失败错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return handle_api_error(f'选课失败: {str(e)}', 500)
 
 @student_bp.route('/enrollments/<int:enrollment_id>/drop', methods=['POST'])
@@ -416,11 +434,6 @@ def drop_course(enrollment_id):
         
         if enrollment.status != 'enrolled':
             return handle_api_error('当前状态不可退选', 400)
-        
-        # 检查退选时间（这里可以添加具体的退选时间限制逻辑）
-        # 示例：检查是否超过退选截止时间
-        # if datetime.datetime.now() > drop_deadline:
-        #     return handle_api_error('已超过退选截止时间', 400)
         
         # 更新选课状态
         enrollment.status = 'dropped'
@@ -470,6 +483,7 @@ def get_all_grades():
         grades = []
         total_credits = 0
         total_grade_points = 0
+        total_actual_grades = 0
         courses_with_grades = 0
         
         for enrollment, course in enrollments:
@@ -522,20 +536,24 @@ def get_all_grades():
             # 计算统计信息
             if enrollment.grade is not None:
                 total_credits += course.credits
-                total_grade_points += enrollment.grade * course.credits
+                # 计算绩点×学分（用于GPA）
+                gpa_point = calculate_gpa_point(enrollment.grade)
+                total_grade_points += gpa_point * course.credits
+                # 累加实际分数（用于平均成绩）
+                total_actual_grades += enrollment.grade
                 courses_with_grades += 1
         
-        # 计算平均绩点
-        gpa = 0
-        if total_credits > 0:
-            gpa = total_grade_points / total_credits
-        
+
+        # 平均成绩和GPA计算
+        average_grade = total_actual_grades / courses_with_grades if courses_with_grades > 0 else 0
+        gpa = total_grade_points / total_credits if total_credits > 0 else 0
+
         statistics = {
             'total_courses': len(grades),
             'courses_with_grades': courses_with_grades,
             'total_credits': total_credits,
             'gpa': round(gpa, 2),
-            'average_grade': round(total_grade_points / courses_with_grades, 2) if courses_with_grades > 0 else 0
+            'average_grade': round(average_grade, 2)
         }
         
         return create_response(
@@ -644,7 +662,8 @@ def get_grade_statistics():
         
         # 初始化统计变量
         total_credits = 0
-        total_grade_points = 0
+        total_grade_points = 0  # 绩点×学分总和
+        total_actual_grades = 0  # 实际分数总和
         grade_distribution = {
             '90-100': 0,
             '80-89': 0,
@@ -655,18 +674,21 @@ def get_grade_statistics():
         
         by_semester = {}
         by_type = {
-            'compulsory': {'count': 0, 'total_grade': 0, 'credits': 0},
-            'elective': {'count': 0, 'total_grade': 0, 'credits': 0},
-            'general': {'count': 0, 'total_grade': 0, 'credits': 0}
+            'compulsory': {'count': 0, 'total_grade': 0, 'total_gpa_points': 0, 'credits': 0},
+            'elective': {'count': 0, 'total_grade': 0, 'total_gpa_points': 0, 'credits': 0},
+            'general': {'count': 0, 'total_grade': 0, 'total_gpa_points': 0, 'credits': 0}
         }
         
         for enrollment, course in enrollments:
             grade = enrollment.grade
             credits = course.credits
+            gpa_point = calculate_gpa_point(grade)  # 计算单课绩点
             
             # 累计算分和绩点
             total_credits += credits
             total_grade_points += grade * credits
+            total_actual_grades += grade  # 累加实际分数
+
             
             # 成绩分布统计
             if grade >= 90:
@@ -685,11 +707,13 @@ def get_grade_statistics():
             if semester not in by_semester:
                 by_semester[semester] = {
                     'count': 0,
-                    'total_grade': 0,
+                    'total_grade': 0,  # 实际分数总和
+                    'total_gpa_points': 0,  # 绩点×学分总和
                     'credits': 0
                 }
             by_semester[semester]['count'] += 1
             by_semester[semester]['total_grade'] += grade
+            by_semester[semester]['total_gpa_points'] += gpa_point * credits
             by_semester[semester]['credits'] += credits
             
             # 按课程类型统计
@@ -697,23 +721,24 @@ def get_grade_statistics():
             if course_type in by_type:
                 by_type[course_type]['count'] += 1
                 by_type[course_type]['total_grade'] += grade
+                by_type[course_type]['total_gpa_points'] += gpa_point * credits
                 by_type[course_type]['credits'] += credits
         
         # 计算平均绩点
+        average_grade = total_actual_grades / len(enrollments) if enrollments else 0
         gpa = total_grade_points / total_credits if total_credits > 0 else 0
-        average_grade = total_grade_points / len(enrollments) if enrollments else 0
         
         # 计算各学期平均分
         for semester, data in by_semester.items():
             if data['count'] > 0:
                 data['average_grade'] = round(data['total_grade'] / data['count'], 2)
-                data['gpa'] = round(data['total_grade'] / data['credits'], 2) if data['credits'] > 0 else 0
+                data['gpa'] = round(data['total_gpa_points'] / data['credits'], 2) if data['credits'] > 0 else 0
         
         # 计算各类型平均分
         for course_type, data in by_type.items():
             if data['count'] > 0:
                 data['average_grade'] = round(data['total_grade'] / data['count'], 2)
-                data['gpa'] = round(data['total_grade'] / data['credits'], 2) if data['credits'] > 0 else 0
+                data['gpa'] = round(data['total_gpa_points'] / data['credits'], 2) if data['credits'] > 0 else 0
         
         statistics = {
             'total_courses': len(enrollments),
@@ -826,6 +851,15 @@ def get_grade_level(grade):
         return '及格'
     else:
         return '不及格'
+
+def calculate_gpa_point(grade):
+    """根据分数计算绩点"""
+    if grade is None or grade < 60:
+        return 0.0
+    # 60分=1.0，70分=2.0，...，100分=5.0
+    gpa_point = 1.0 + (grade - 60) * 0.1
+    # 限制最高绩点为5.0
+    return min(gpa_point, 5.0)
 
 def is_enrollment_period():
     """检查是否在选课时间内（示例函数，需要根据实际情况实现）"""

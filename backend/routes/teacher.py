@@ -124,10 +124,11 @@ def get_course_students(course_id):
     if not teaching:
         return jsonify({'error': '您没有教授此课程的权限'}), 403
     
-    # 获取选课学生
+    # 获取选课学生（只包括enrolled和completed状态）
     enrollments = models.Enrollment.query.filter_by(
-        course_id=course_id,
-        status='enrolled'
+        course_id=course_id
+    ).filter(
+        models.Enrollment.status.in_(['enrolled', 'completed'])
     ).all()
     
     students = []
@@ -144,7 +145,8 @@ def get_course_students(course_id):
                 'enrollment_id': enrollment.enrollment_id,
                 'regular_score': enrollment.regular_score,
                 'final_score': enrollment.final_score,
-                'grade': enrollment.grade
+                'grade': enrollment.grade,
+                'status': enrollment.status
             })
     
     return jsonify(students)
@@ -164,10 +166,11 @@ def get_students():
     student_ids = set()  # 用于去重
     
     for teaching in teachings:
-        # 获取该课程的所有学生
+        # 获取该课程的所有学生（只包括enrolled和completed状态）
         enrollments = models.Enrollment.query.filter_by(
-            course_id=teaching.course_id,
-            status='enrolled'
+            course_id=teaching.course_id
+        ).filter(
+            models.Enrollment.status.in_(['enrolled', 'completed'])
         ).all()
         
         course = models.Course.query.get(teaching.course_id)
@@ -176,13 +179,17 @@ def get_students():
             if enrollment.student_id not in student_ids:
                 student = models.Student.query.get(enrollment.student_id)
                 if student:
+                    # 确保所有字段都有值，没有则使用默认值
                     students.append({
                         'student_id': student.student_id,
                         'name': student.name,
-                        'department': student.department,
+                        'gender': student.gender if student.gender else '未知',
+                        'department': student.department if student.department else '未设置',
+                        'major': student.major if student.major else '未设置',
                         'course_id': teaching.course_id,
                         'course_name': course.course_name if course else '未知课程',
-                        'class_no': teaching.class_no
+                        'class_no': teaching.class_no if teaching.class_no else '未设置',
+                        'enrollment_year': student.enrollment_year if student.enrollment_year else '未设置'
                     })
                     student_ids.add(enrollment.student_id)
     
@@ -202,9 +209,11 @@ def get_grades():
     grades = []
     
     for teaching in teachings:
-        # 获取该课程的所有学生成绩
+        # 获取该课程的所有学生成绩（只包括enrolled和completed状态）
         enrollments = models.Enrollment.query.filter_by(
             course_id=teaching.course_id
+        ).filter(
+            models.Enrollment.status.in_(['enrolled', 'completed'])
         ).all()
         
         course = models.Course.query.get(teaching.course_id)
@@ -288,9 +297,9 @@ def update_grade():
         except ValueError:
             return jsonify({'error': '期末成绩格式错误'}), 400
     
-    # 计算总成绩（平时占30%，期末占70%）
+    # 计算总成绩（平时占50%，期末占50%）
     if enrollment.regular_score is not None and enrollment.final_score is not None:
-        enrollment.grade = round(enrollment.regular_score * 0.3 + enrollment.final_score * 0.7, 2)
+        enrollment.grade = round(enrollment.regular_score * 0.5 + enrollment.final_score * 0.5, 2)
         # 生成成绩哈希
         enrollment.grade_hash = SecurityUtils.calculate_grade_hash(
             enrollment.student_id,
@@ -405,7 +414,7 @@ def batch_update_grades():
             
             # 计算总成绩
             if enrollment.regular_score is not None and enrollment.final_score is not None:
-                enrollment.grade = round(enrollment.regular_score * 0.3 + enrollment.final_score * 0.7, 2)
+                enrollment.grade = round(enrollment.regular_score * 0.5 + enrollment.final_score * 0.5, 2)
                 enrollment.grade_hash = SecurityUtils.calculate_grade_hash(
                     enrollment.student_id,
                     enrollment.course_id,

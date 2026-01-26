@@ -98,134 +98,6 @@ def get_course_detail(course_id):
     except Exception as e:
         return jsonify({'success': False, 'error': f'获取课程详情失败: {str(e)}'}), 500
 
-@course_bp.route('/', methods=['POST'])
-@teacher_only
-def create_course():
-    """创建课程（教师）"""
-    try:
-        data = request.get_json()
-        
-        # 验证必填字段
-        required_fields = ['course_id', 'course_name', 'credits', 'hours', 'semester']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'success': False, 'error': f'{field}不能为空'}), 400
-        
-        # 检查课程是否已存在
-        existing_course = models.Course.query.get(data['course_id'])
-        if existing_course:
-            return jsonify({'success': False, 'error': '课程ID已存在'}), 400
-        
-        # 创建课程
-        course = models.Course(
-            course_id=data['course_id'],
-            course_name=data['course_name'],
-            credits=float(data['credits']),
-            hours=int(data['hours']),
-            type=data.get('type', 'elective'),
-            semester=data['semester'],
-            description=data.get('description', ''),
-            capacity=int(data.get('capacity', 50)),
-            current_enrollment=0
-        )
-        
-        db.session.add(course)
-        
-        # 如果是教师创建的课程，自动分配教学任务
-        teacher_id = session.get('user_id')
-        if teacher_id:
-            teaching = models.Teaching(
-                teacher_id=teacher_id,
-                course_id=data['course_id'],
-                teaching_time=data.get('teaching_time'),
-                location=data.get('location'),
-                class_no=data.get('class_no')
-            )
-            db.session.add(teaching)
-        
-        db.session.commit()
-        
-        # 记录日志
-        log = models.AuditLog(
-            user_id=teacher_id,
-            action_type='create_course',
-            description=f'创建课程: {data["course_name"]} ({data["course_id"]})',
-            ip_address=request.remote_addr,
-            result='success'
-        )
-        db.session.add(log)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'message': '课程创建成功',
-            'course_id': course.course_id
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': f'创建课程失败: {str(e)}'}), 500
-
-@course_bp.route('/<course_id>', methods=['PUT'])
-@teacher_only
-def update_course(course_id):
-    """更新课程信息"""
-    try:
-        course = models.Course.query.get(course_id)
-        if not course:
-            return jsonify({'success': False, 'error': '课程不存在'}), 404
-        
-        # 验证教师是否有权限修改此课程
-        teacher_id = session.get('user_id')
-        teaching = models.Teaching.query.filter_by(
-            teacher_id=teacher_id,
-            course_id=course_id
-        ).first()
-        
-        if not teaching and session.get('role') != 'admin':
-            return jsonify({'success': False, 'error': '没有权限修改此课程'}), 403
-        
-        data = request.get_json()
-        
-        # 更新允许修改的字段
-        allowed_fields = ['course_name', 'description', 'capacity', 'teaching_time', 'location', 'class_no']
-        for field in allowed_fields:
-            if field in data and data[field] is not None:
-                if field in ['course_name', 'description', 'teaching_time', 'location', 'class_no']:
-                    setattr(course, field, data[field])
-                elif field == 'capacity':
-                    if int(data[field]) < course.current_enrollment:
-                        return jsonify({'success': False, 'error': '容量不能小于当前选课人数'}), 400
-                    course.capacity = int(data[field])
-        
-        # 更新教学任务信息
-        if teaching:
-            if 'teaching_time' in data and data['teaching_time']:
-                teaching.teaching_time = data['teaching_time']
-            if 'location' in data and data['location']:
-                teaching.location = data['location']
-            if 'class_no' in data and data['class_no']:
-                teaching.class_no = data['class_no']
-        
-        course.updated_at = datetime.datetime.now()
-        db.session.commit()
-        
-        # 记录日志
-        log = models.AuditLog(
-            user_id=teacher_id,
-            action_type='update_course',
-            description=f'更新课程信息: {course.course_name} ({course_id})',
-            ip_address=request.remote_addr,
-            result='success'
-        )
-        db.session.add(log)
-        db.session.commit()
-        
-        return jsonify({'success': True, 'message': '课程更新成功'})
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': f'更新课程失败: {str(e)}'}), 500
 
 @course_bp.route('/<course_id>', methods=['DELETE'])
 @admin_only
@@ -237,8 +109,11 @@ def delete_course(course_id):
             return jsonify({'success': False, 'error': '课程不存在'}), 404
         
         # 检查是否有学生选课
-        enrollments = models.Enrollment.query.filter_by(course_id=course_id).count()
-        if enrollments > 0:
+        active_enrollment_count = models.Enrollment.query.filter(
+            models.Enrollment.course_id == course_id,models.
+            Enrollment.status == 'enrolled'
+            ).count()
+        if active_enrollment_count > 0:
             return jsonify({'success': False, 'error': '该课程已有学生选课，无法删除'}), 400
         
         # 删除相关教学任务

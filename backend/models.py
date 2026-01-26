@@ -7,7 +7,7 @@ from sqlalchemy import event
 class Student(db.Model):
     __tablename__ = 'students'
     
-    student_id = db.Column(db.String(20), primary_key=True, comment='学号')
+    student_id = db.Column(db.String(20), db.ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True, comment='学号')
     name = db.Column(db.String(50), nullable=False, comment='姓名')
     gender = db.Column(db.Enum('男', '女'), comment='性别')
     birth_date = db.Column(db.Date, comment='出生日期')
@@ -23,10 +23,16 @@ class Student(db.Model):
     
     # 关系
     enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
-    user = db.relationship('User', back_populates='student', uselist=False, 
-                          foreign_keys='User.user_id', 
-                          primaryjoin='Student.student_id == User.user_id',
-                          overlaps="teacher")
+    user = db.relationship(
+        'User', 
+        back_populates='student', 
+        uselist=False, 
+        foreign_keys='User.user_id', 
+        primaryjoin='Student.student_id == User.user_id',
+        overlaps="teacher",
+        cascade='all, delete-orphan',  # 级联删除，删学生自动删关联用户
+        passive_deletes=True           # 兼容MySQL外键检查，避免ORM与数据库规则冲突
+    )
     
     def __repr__(self):
         return f'<Student {self.student_id}: {self.name}>'
@@ -35,7 +41,7 @@ class Student(db.Model):
 class Teacher(db.Model):
     __tablename__ = 'teachers'
     
-    teacher_id = db.Column(db.String(20), primary_key=True, comment='工号')
+    teacher_id = db.Column(db.String(20), db.ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True, comment='工号')
     name = db.Column(db.String(50), nullable=False, comment='姓名')
     gender = db.Column(db.Enum('男', '女'), comment='性别')
     title = db.Column(db.String(50), comment='职称')
@@ -48,10 +54,17 @@ class Teacher(db.Model):
     
     # 关系
     teaching = db.relationship('Teaching', back_populates='teacher', cascade='all, delete-orphan')
-    user = db.relationship('User', back_populates='teacher', uselist=False,
-                          foreign_keys='User.user_id',
-                          primaryjoin='Teacher.teacher_id == User.user_id',
-                          overlaps="student")
+    user = db.relationship(
+        'User', 
+        back_populates='teacher',  # 注意你的反向引用是teacher
+        uselist=False, 
+        # 你的其他原有配置（foreign_keys/primaryjoin/overlaps）保留
+        foreign_keys='User.user_id', 
+        primaryjoin='Teacher.teacher_id == User.user_id',
+        overlaps="student",
+        cascade='all, delete-orphan',  # 删除教师时删关联用户
+        passive_deletes=True           
+    )
     
     def __repr__(self):
         return f'<Teacher {self.teacher_id}: {self.name}>'

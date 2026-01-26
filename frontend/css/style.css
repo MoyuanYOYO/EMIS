@@ -188,3 +188,54 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* 提示框样式 */
+#messageToast {
+    position: fixed;
+    top: 20px;
+    /* 距离顶部20px，不遮挡导航栏 */
+    right: 20px;
+    /* 右侧弹出 */
+    z-index: 9999;
+    /* 最高层级，不被其他元素遮挡 */
+    min-width: 300px;
+    max-width: 500px;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateY(-20px);
+    /* 入场动画：从上方滑入 */
+}
+
+/* 提示框显示状态 */
+#messageToast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 不同类型提示框的背景色 */
+#messageToast.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+}
+
+#messageToast.warning {
+    background-color: #fffbeb;
+    color: #92400e;
+    border-left: 4px solid #f59e0b;
+}
+
+#messageToast.danger {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-left: 4px solid #ef4444;
+}
+
+#messageToast.info {
+    background-color: #e0f2fe;
+    color: #0c4a6e;
+    border-left: 4px solid #0284c7;
+}

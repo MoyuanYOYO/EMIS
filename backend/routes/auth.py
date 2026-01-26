@@ -1,8 +1,9 @@
 # backend/routes/auth.py - 用户认证路由
-from flask import Blueprint, request, jsonify, session, redirect, url_for
+from flask import Blueprint, request, jsonify, session, redirect, url_for, g
 from backend import models
 from backend.app import db
 from backend.utils.security import SecurityUtils
+from backend.utils.decorators import login_required
 import datetime
 
 # 创建蓝图
@@ -122,6 +123,58 @@ def current_user():
             user_info['department'] = teacher.department
     
     return jsonify(user_info)
+
+# 修改密码
+@auth_bp.route('/change-password', methods=['POST'])
+@login_required  # 必须登录才能修改
+def change_password():
+    data = request.get_json()
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+    
+    # 基础校验
+    if not old_password or not new_password or not confirm_password:
+        return jsonify({'error': '旧密码、新密码和确认密码不能为空'}), 400
+    
+    # 新密码一致性校验
+    if new_password != confirm_password:
+        return jsonify({'error': '新密码和确认密码不一致'}), 400
+    
+    # 新密码长度校验
+    if len(new_password) < 6:
+        return jsonify({'error': '新密码至少6个字符'}), 400
+    
+    # 获取当前用户
+    user = models.User.query.get(session.get('user_id'))
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    
+    # 旧密码正确性校验
+    if not SecurityUtils.check_password(old_password, user.password_hash):
+        return jsonify({'error': '旧密码错误'}), 401
+    
+    # 新密码不能与旧密码相同
+    if SecurityUtils.check_password(new_password, user.password_hash):
+        return jsonify({'error': '新密码不能与旧密码相同'}), 400
+    
+    # 更新密码并记录日志
+    user.password_hash = SecurityUtils.hash_password(new_password)
+    user.updated_at = datetime.datetime.now()
+    db.session.commit()
+    
+    # 记录操作日志
+    log = models.AuditLog(
+        user_id=user.user_id,
+        action_type='change_password',
+        description=f'用户 {user.username} 修改登录密码',
+        ip_address=request.remote_addr,
+        result='success'
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({'message': '密码修改成功，请重新登录'}), 200
 
 # 简单的登录测试页面
 @auth_bp.route('/test-login')

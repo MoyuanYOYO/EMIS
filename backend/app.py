@@ -2,7 +2,8 @@
 backend/app.py - Flask主应用
 添加静态文件服务功能
 """
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
 from flask import Flask, send_from_directory, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
@@ -28,12 +29,14 @@ from backend.routes.auth import auth_bp
 from backend.routes.course import course_bp
 from backend.routes.student import student_bp
 from backend.routes.teacher import teacher_bp
+from backend.routes.admin import admin_bp
 
 # 注册蓝图
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(course_bp, url_prefix='/api/course')
 app.register_blueprint(student_bp, url_prefix='/api/student')
 app.register_blueprint(teacher_bp, url_prefix='/api/teacher')
+app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # 导入装饰器
 from backend.utils.decorators import login_required, student_only, teacher_only, admin_only
@@ -97,27 +100,15 @@ def admin_dashboard_page():
         return redirect('/')
     
     if session.get('role') != 'admin':
-        return redirect('/')
+        # 如果不是管理员，重定向到对应页面
+        if session.get('role') == 'student':
+            return redirect('/student/dashboard')
+        elif session.get('role') == 'teacher':
+            return redirect('/teacher/dashboard')
+        else:
+            return redirect('/')
     
-    return '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>管理员仪表板</title>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
-            .message { background: #f8f9fa; padding: 30px; border-radius: 10px; display: inline-block; }
-        </style>
-    </head>
-    <body>
-        <div class="message">
-            <h2>🛡️ 管理员仪表板</h2>
-            <p>管理员功能正在开发中...</p>
-            <p><a href="/api/auth/logout">退出登录</a></p>
-        </div>
-    </body>
-    </html>
-    '''
+    return serve_frontend_subdir('pages', 'admin-dashboard.html')
 
 
 # ==================== 静态资源路由 ====================
