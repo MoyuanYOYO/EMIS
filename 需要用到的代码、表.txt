@@ -1,4 +1,0 @@
-venv\Scripts\activate
-python run.py
-http://localhost:5000
-showMessage('测试消息', 'success')

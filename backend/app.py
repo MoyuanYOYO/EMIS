@@ -167,7 +167,7 @@ def test_auth():
         },
         "test_users": [
             {"username": "zhangsan", "password": "123456", "role": "student"},
-            {"username": "zhang_prof", "password": "123456", "role": "teacher"},
+            {"username": "huang_prof", "password": "123456", "role": "teacher"},
             {"username": "admin", "password": "123456", "role": "admin"}
         ]
     })

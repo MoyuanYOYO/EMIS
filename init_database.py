@@ -1,5 +1,5 @@
 """
-init_database.py - 数据库初始化脚本（增强版）
+init_database.py - 数据库初始化脚本
 """
 import sys
 import os
@@ -54,27 +54,27 @@ def init_database():
         if not teacher_user:
             teacher_user = models.User(
                 user_id='T001',
-                username='zhang_prof',
+                username='huang_prof',
                 password_hash=SecurityUtils.hash_password('123456'),
                 role='teacher',
                 status='active'
             )
             db.session.add(teacher_user)
             created_count += 1
-            print("  ✓ 创建教师用户: zhang_prof / 123456")
+            print("  ✓ 创建教师用户: huang_prof / 123456")
         
         # 3. 教师详细信息
         teacher = models.Teacher.query.get('T001')
         if not teacher:
             teacher = models.Teacher(
                 teacher_id='T001',
-                name='张教授',
+                name='黄教授',
                 gender='男',
                 title='教授',
-                department='计算机科学与技术学院',
+                department='计算机与电子信息学院',
                 office='计算机楼301',
                 phone='13800138000',
-                email='zhang@university.edu.cn'
+                email='huang@gxu.edu.cn'
             )
             db.session.add(teacher)
             created_count += 1
@@ -109,8 +109,8 @@ def init_database():
                 id_card_encrypted=encrypted_id_card,
                 phone_encrypted=encrypted_phone,
                 email='zhangsan@student.edu.cn',
-                department='计算机科学与技术学院',
-                major='计算机科学与技术',
+                department='计算机与电子信息学院',
+                major='信息安全',
                 enrollment_year=2023,
                 status='active'
             )
@@ -204,7 +204,7 @@ def init_database():
                 print(f"\n✓ 成功创建了 {created_count} 条新记录")
                 print("\n测试账户：")
                 print("  管理员: admin / 123456")
-                print("  教师: zhang_prof / 123456")
+                print("  教师: huang_prof / 123456")
                 print("  学生: zhangsan / 123456")
             except Exception as e:
                 db.session.rollback()

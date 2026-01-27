@@ -377,7 +377,7 @@ class StudentDashboard {
                     <div class="card-body">
                         <div class="alert alert-light border">
                             <p class="mb-1"><strong>📢 重要通知</strong></p>
-                            <p class="mb-0">请同学们在规定时间内完成选课操作，选课截止日期为每学期开学后第二周周五。</p>
+                            <p class="mb-0">请同学们在规定时间内完成选课操作。</p>
                         </div>
                     </div>
                 </div>
@@ -425,7 +425,7 @@ class StudentDashboard {
                     <button class="btn btn-primary" id="editProfileBtn">
                         <i class="bi bi-pencil"></i> 编辑资料
                     </button>
-                    <!-- 新增：修改密码按钮 -->
+                    <!-- 修改密码按钮 -->
                     <button class="btn btn-outline-warning ms-2" id="changePasswordBtn">
                         <i class="bi bi-key"></i> 修改密码
                     </button>

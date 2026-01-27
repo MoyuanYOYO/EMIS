@@ -237,7 +237,7 @@ def test_login():
         <h3>测试账户</h3>
         <ul>
             <li>学生: zhangsan / 123456</li>
-            <li>教师: zhang_prof / 123456</li>
+            <li>教师: huang_prof / 123456</li>
             <li>管理员: admin / 123456</li>
         </ul>
     </body>

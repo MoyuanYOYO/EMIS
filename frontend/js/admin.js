@@ -1608,11 +1608,11 @@ class AdminDashboard {
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">院系 <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="newStudentDepartment" required placeholder="如：计算机学院">
+                                    <input type="text" class="form-control" id="newStudentDepartment" required placeholder="如：计算机与电子信息学院">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">专业 <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="newStudentMajor" required placeholder="如：计算机科学与技术">
+                                    <input type="text" class="form-control" id="newStudentMajor" required placeholder="如：信息安全">
                                 </div>
                             </div>
                             <div class="row">
@@ -2589,7 +2589,7 @@ class AdminDashboard {
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">院系 <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="newTeacherDepartment" required placeholder="如：计算机学院">
+                                    <input type="text" class="form-control" id="newTeacherDepartment" required placeholder="如：计算机与电子信息学院">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">职称 <span class="text-danger">*</span></label>
@@ -2954,7 +2954,7 @@ class AdminDashboard {
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">课程名称 <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="newCourseName" required 
-                                               placeholder="如：计算机科学导论">
+                                               placeholder="如：信息安全导论">
                                     </div>
                                 </div>
                                 
