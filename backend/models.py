@@ -29,7 +29,7 @@ class Student(db.Model):
         uselist=False, 
         foreign_keys='User.user_id', 
         primaryjoin='Student.student_id == User.user_id',
-        overlaps="teacher",
+        overlaps="teacher,user",
         cascade='all, delete-orphan',  # 级联删除，删学生自动删关联用户
         passive_deletes=True           # 兼容MySQL外键检查，避免ORM与数据库规则冲突
     )
@@ -61,7 +61,7 @@ class Teacher(db.Model):
         # 你的其他原有配置（foreign_keys/primaryjoin/overlaps）保留
         foreign_keys='User.user_id', 
         primaryjoin='Teacher.teacher_id == User.user_id',
-        overlaps="student",
+        overlaps="student,user",
         cascade='all, delete-orphan',  # 删除教师时删关联用户
         passive_deletes=True           
     )
