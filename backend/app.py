@@ -158,17 +158,20 @@ def test_db():
 
 @app.route('/api/test-auth')
 def test_auth():
-    """测试认证功能"""
+    """测试认证功能（仅在调试模式下可用，且不返回任何密码）"""
+    if not app.debug:
+        return jsonify({"success": False, "error": "该接口仅在调试模式下可用"}), 404
+
     return jsonify({
         "endpoints": {
             "login": "/api/auth/login (POST)",
             "logout": "/api/auth/logout (GET)",
             "current_user": "/api/auth/current-user (GET)"
         },
-        "test_users": [
-            {"username": "zhangsan", "password": "123456", "role": "student"},
-            {"username": "huang_prof", "password": "123456", "role": "teacher"},
-            {"username": "admin", "password": "123456", "role": "admin"}
+        "demo_users": [
+            {"username": "zhangsan", "role": "student"},
+            {"username": "huang_prof", "role": "teacher"},
+            {"username": "admin", "role": "admin"}
         ]
     })
 
@@ -204,6 +207,14 @@ def admin_dashboard():
 
 # ==================== 应用启动 ====================
 
+def _env_flag(name, default=False):
+    """从环境变量读取布尔开关，未设置时返回默认值"""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
 if __name__ == '__main__':
     # 在第一次运行时创建表（如果不存在）
     with app.app_context():
@@ -213,5 +224,13 @@ if __name__ == '__main__':
         print("服务器启动在: http://localhost:5000")
         print("API接口前缀: /api")
         print("静态文件路径: /css/*, /js/*")
-    
-    app.run(debug=True, host='0.0.0.0', port=5000)
+
+    # 调试模式默认关闭：开启时 Werkzeug 调试器可执行任意代码，切勿对外网暴露
+    debug = _env_flag('FLASK_DEBUG', False)
+    host = os.getenv('HOST', '127.0.0.1')
+    port = int(os.getenv('PORT', 5000))
+
+    if debug and host not in ('127.0.0.1', 'localhost'):
+        print("⚠️  警告：调试模式已开启且监听非本地地址，存在远程代码执行风险！")
+
+    app.run(debug=debug, host=host, port=port)

@@ -74,7 +74,7 @@ def init_database():
                 department='计算机与电子信息学院',
                 office='计算机楼301',
                 phone='13800138000',
-                email='huang@gxu.edu.cn'
+                email='teacher@example.edu.cn'
             )
             db.session.add(teacher)
             created_count += 1
